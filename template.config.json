@@ -1,0 +1,9 @@
+{
+  "autonomousCache": {
+    "credential": {
+      "username": "",
+      "password": ""
+    },
+    "edt": ["CSID"]
+  }
+}
