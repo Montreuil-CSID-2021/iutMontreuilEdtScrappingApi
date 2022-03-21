@@ -90,13 +90,17 @@ class Scrapper {
         /** @type EdtDay[] */
         let days = []
         for (let el of /** @type ElementHandle<HtmlElement>[] */ await page.$$('#quadrillage > .plageDIV')) {
-            let css = (await el.getAttribute('style')).split(';').map(c => {
-                let key_value = c.split(':')
-                return {
-                    key: key_value[0],
-                    value: key_value[1]
+            let css = (await el.getAttribute('style'))
+                .replaceAll(' ', '')
+                .split(';')
+                .map(c => {
+                    let key_value = c.split(':')
+                    return {
+                        key: key_value[0],
+                        value: key_value[1]
+                    }
                 }
-            })
+            )
 
             let height = css.find(c => c.key === "height").value.replace('px', '')
             let ml = css.find(c => c.key === "margin-left").value.replace('%', '')
