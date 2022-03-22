@@ -1,11 +1,15 @@
 export default class User {
-    username: string
-    encryptPassword: string
-    defaultEdt: string
+    readonly username: string
+    readonly password: string
+    readonly defaultEdt: string
 
     constructor(username: string, password: string, defaultEdt: string) {
         this.username = username;
-        this.encryptPassword = password;
+        this.password = password
         this.defaultEdt = defaultEdt;
+    }
+
+    checkPassword(password: string): boolean {
+        return this.password === password
     }
 }

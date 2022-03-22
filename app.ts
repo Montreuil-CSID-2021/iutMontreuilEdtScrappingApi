@@ -12,9 +12,13 @@ import EdtDay from './edt/EdtDay'
 // Fichier config
 import config from "./config.json"
 import EdtCredential from "./edt/EdtCredential";
+import CacheManager from "./edt/cache/CacheManager";
+
+// Instantiation du questionnaire de cache
+let cacheManager = new CacheManager()
 
 // Instantiation du Scrapper
-let scrapper = new Scrapper()
+let scrapper = new Scrapper(cacheManager)
 
 // Démarrage du serveur WEB - Socket IO
 const server = http.createServer()

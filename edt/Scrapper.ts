@@ -4,6 +4,8 @@ import EdtDay from "./EdtDay"
 import User from './User'
 import LiteUser from "./LiteUser"
 import EdtCredential from "./EdtCredential";
+import CacheManager from "./cache/CacheManager";
+import EventEmitter from "events";
 
 interface scrapDate {
     value: number,
@@ -11,6 +13,12 @@ interface scrapDate {
 }
 
 export default class Scrapper {
+    private cacheManager: CacheManager
+
+    constructor(cacheManager: CacheManager) {
+        this.cacheManager = cacheManager
+    }
+
     async _login(credential: EdtCredential): Promise<{user: User, page: Page, availableWeek: Array<scrapDate>, profList: Array<string>}> {
         // Lancement du navigateur
         Logs.info(`Chargement d'un navigateur de scrapping`)
@@ -128,11 +136,7 @@ export default class Scrapper {
         return days
     }
 
-    /**
-     * @param credential {EdtCredential}
-     * @param event {EventEmitter}
-     */
-    scrapForWeb(credential, event) {
+    scrapForWeb(credential: EdtCredential, event: EventEmitter) {
         Logs.info(`Récupération EDT : ${credential.username}`)
 
         // Connexion
@@ -145,15 +149,24 @@ export default class Scrapper {
 
                 event.emit('login', new LiteUser(user))
 
-                let days: Array<EdtDay> = []
-                // Pour chaque semaine disponible
-                for(const date of availableWeek) {
-                    try {
-                        let edtDays = await this._parseWeek(page, date, profList)
+                // Vérification cache EDT
+                let daysFromCache = this.cacheManager.getEdtByName(user.defaultEdt)
+                if(daysFromCache) {
+                    event.emit('update', daysFromCache)
+                    Logs.info(`Récupération cache EDT : ${credential.username}`)
+                } else {
+                    let days: Array<EdtDay> = []
+                    // Pour chaque semaine disponible
+                    for(const date of availableWeek) {
+                        try {
+                            let edtDays = await this._parseWeek(page, date, profList)
 
-                        days = days.concat(edtDays)
-                        event.emit('update', days)
-                    } catch (e) {}
+                            days = days.concat(edtDays)
+                            event.emit('update', days)
+                        } catch (e) {}
+                    }
+
+                    this.cacheManager.addEdt(user.defaultEdt, days)
                 }
 
                 await page.context().browser().close()
