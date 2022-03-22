@@ -8,7 +8,7 @@ export default class CacheManager {
     addEdt(name: string, days: Array<EdtDay>) {
         this.removeEdtByName(name)
         let now = new Date()
-        this.edts.push(new CacheEdt(name, new Date(now.getTime() + 7200000), days))
+        this.edts.push(new CacheEdt(name, new Date(now.getTime() + 7200000), days.sort((a, b) => a.startDate.getTime() - b.startDate.getTime())))
     }
 
     removeEdtByName(name: string) {

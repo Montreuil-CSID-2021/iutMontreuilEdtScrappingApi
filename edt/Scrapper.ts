@@ -6,6 +6,7 @@ import LiteUser from "./LiteUser"
 import EdtCredential from "./EdtCredential";
 import CacheManager from "./cache/CacheManager";
 import EventEmitter from "events";
+import ColorSetter from "./ColorSetter";
 
 interface scrapDate {
     value: number,
@@ -14,6 +15,7 @@ interface scrapDate {
 
 export default class Scrapper {
     private cacheManager: CacheManager
+    private colorSetter = new ColorSetter()
 
     constructor(cacheManager: CacheManager) {
         this.cacheManager = cacheManager
@@ -71,7 +73,7 @@ export default class Scrapper {
         }
     }
 
-    async _parseWeek(page: Page, date: { value: number, text: string }, profList: Array<string>): Promise<Array<EdtDay>> {
+    async _parseWeek(page: Page, date: { value: number, text: string }, profList: Array<string>, edtName): Promise<Array<EdtDay>> {
         let mondayDate = new Date(date.value * 1000)
 
         Logs.info(`Parsing : ${mondayDate.toLocaleDateString()}`)
@@ -130,6 +132,8 @@ export default class Scrapper {
                 day.location = "Aucune"
             }
 
+            day.color = this.colorSetter.getColorForSubjectOfEdt(day.subject, edtName)
+
             days.push(day)
         }
 
@@ -163,7 +167,7 @@ export default class Scrapper {
                     )
                         ) {
                         try {
-                            let edtDays = await this._parseWeek(page, date, profList)
+                            let edtDays = await this._parseWeek(page, date, profList, user.defaultEdt)
 
                             days = days.concat(edtDays)
                             event.emit('update', days)
