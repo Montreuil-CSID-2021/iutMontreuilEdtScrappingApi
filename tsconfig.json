@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "module": "CommonJS",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "target": "ES2021",
+    "declaration": true,
+    "removeComments": true,
+    "lib": [
+      "ES2021.String",
+      "es2021",
+      "dom"
+    ]
+  },
+  "include": [
+    "."
+  ]
+}

@@ -1,4 +1,4 @@
-class EdtDay {
+export default class EdtDay {
     subject = "Inconnu"
 
     location = "Inconnu"
@@ -11,5 +11,3 @@ class EdtDay {
 
     color = "#E47522"
 }
-
-module.exports = EdtDay

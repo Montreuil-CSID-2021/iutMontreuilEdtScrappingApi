@@ -1,19 +1,15 @@
 // - - - Node Module - - - //
-const fs = require("fs")
+import fs from "fs"
 
 // - - - Import Class - - - //
-const Utils = require("./Utils")
+import Utils from "./Utils"
 
 // - - - Class de logs - - - //
-class Logs
+export default class Logs
 {
-    /** @private
-     *  @type {string} */
-    static logsDir = `${__dirname}/../Logs`
+    private static logsDir = `${__dirname}/../Logs`
 
-    /** @private
-     *  @param {string} log */
-    static writeLog(log) {
+    private static writeLog(log: string) {
         let string_date = Utils.getStringDate()
 
         if(!fs.existsSync(this.logsDir)) {
@@ -25,26 +21,21 @@ class Logs
         log_file.write(log + "\n")
     }
 
-    /** @param {string} content */
-    static info(content) {
+    static info(content: string) {
         let time = Utils.getStringDateAndTime()
         console.log('\x1b[37m' + time + ' \x1b[36minfo \x1b[37m: ' + content)
         this.writeLog(`${time} info : ${content}`)
     }
 
-    /** @param {string|Error} content */
-    static error(content) {
+    static error(content: string|Error) {
         let time = Utils.getStringDateAndTime()
         console.log('\x1b[37m' + time + ' \x1b[31merror \x1b[37m: ' + content.toString())
         this.writeLog(`${time} error : ${content.toString()}`)
     }
 
-    /** @param {string} content */
-    static warn(content) {
+    static warn(content: string) {
         let time = Utils.getStringDateAndTime()
         console.log('\x1b[37m' + time + ' \x1b[33mwarn \x1b[37m: ' + content)
         this.writeLog(`${time} warn : ${content}`)
     }
 }
-
-module.exports = Logs

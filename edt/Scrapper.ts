@@ -1,24 +1,17 @@
-const Logs = require("../commons/Logs");
-const {webkit, Page, ElementHandle, HtmlElement} = require("playwright");
-const EdtDay = require("./EdtDay");
-const User = require('./User')
-const LiteUser = require("./LiteUser");
+import Logs from '../commons/Logs'
+import {webkit, Page} from "playwright"
+import EdtDay from "./EdtDay"
+import User from './User'
+import LiteUser from "./LiteUser"
+import EdtCredential from "./EdtCredential";
 
-class Scrapper {
-    /**
-     * @private
-     * @param credential {EdtCredential}
-     * @return Promise<{
-     *     user: User,
-     *     page: Page,
-     *     availableWeek: {
-     *         value: string,
-     *         text: string
-     *     }[],
-     *     profList: String[]
-     * }>
-     */
-    async _login(credential) {
+interface scrapDate {
+    value: number,
+    text: string
+}
+
+export default class Scrapper {
+    async _login(credential: EdtCredential): Promise<{user: User, page: Page, availableWeek: Array<scrapDate>, profList: Array<string>}> {
         // Lancement du navigateur
         Logs.info(`Chargement d'un navigateur de scrapping`)
         let browser = await webkit.launch()
@@ -44,7 +37,7 @@ class Scrapper {
         await page.goto(`https://ent.iut.univ-paris8.fr/edt/presentations.php`)
 
         // Emploi du temps sélectionné pour le compte utilisateur
-        let selectedEdt = await page.$eval('#selectpromo', /** @param sel {HTMLSelectElement} */(sel) => sel.options[sel.options.selectedIndex].textContent)
+        let selectedEdt = await page.$eval('#selectpromo', (sel: HTMLSelectElement) => sel.options[sel.options.selectedIndex].textContent)
         Logs.info(`${credential.username} connecté sur l'emploi du temps ${selectedEdt} `)
 
         // Récupération de la liste des semaines
@@ -52,7 +45,7 @@ class Scrapper {
         for (let option of (await (await page.$('#selectsem')).$$('option'))) {
             availableWeek.push({
                 text: await option.innerText(),
-                value: await option.getAttribute('value')
+                value: Number.parseInt(await option.getAttribute('value'))
             })
         }
 
@@ -70,26 +63,16 @@ class Scrapper {
         }
     }
 
-    /**
-     * @private
-     * @param page {Page}
-     * @param date {{
-     *     value: string,
-     *     text: string
-     * }}
-     * @param profList {string[]}
-     * @return {Promise<EdtDay[]>}
-     */
-    async _parseWeek(page, date, profList) {
+    async _parseWeek(page: Page, date: {value: number, text: string}, profList: Array<string>): Promise<Array<EdtDay>> {
         let mondayDate = new Date(date.value * 1000)
 
         Logs.info(`Parsing : ${mondayDate.toLocaleDateString()}`)
 
+        // @ts-ignore
         await page.evaluate((date) => modifDate(date.value), date)
 
-        /** @type EdtDay[] */
         let days = []
-        for (let el of /** @type ElementHandle<HtmlElement>[] */ await page.$$('#quadrillage > .plageDIV')) {
+        for (let el of await page.$$('#quadrillage > .plageDIV')) {
             let css = (await el.getAttribute('style'))
                 .replaceAll(' ', '')
                 .split(';')
@@ -102,9 +85,9 @@ class Scrapper {
                 }
             )
 
-            let height = css.find(c => c.key === "height").value.replace('px', '')
-            let ml = css.find(c => c.key === "margin-left").value.replace('%', '')
-            let top = css.find(c => c.key === "top").value.replace('px', '')
+            let height = Number.parseInt(css.find(c => c.key === "height").value.replace('px', ''))
+            let ml = Number.parseInt(css.find(c => c.key === "margin-left").value.replace('%', ''))
+            let top = Number.parseInt(css.find(c => c.key === "top").value.replace('px', ''))
 
             let day = new EdtDay()
             day.startDate = new Date(mondayDate.getTime() + (((24 * 60 * 60 * ml / 80 * 4) + (60 * (top - 30 + 480))) * 1000))
@@ -120,7 +103,6 @@ class Scrapper {
                 }
             }
 
-            /** @type ElementHandle<HtmlElement>[] */
             let tds = await el.$$('td')
 
             let td0 = tds[0]
@@ -163,8 +145,7 @@ class Scrapper {
 
                 event.emit('login', new LiteUser(user))
 
-                /** @type {EdtDay[]} */
-                let days = []
+                let days: Array<EdtDay> = []
                 // Pour chaque semaine disponible
                 for(const date of availableWeek) {
                     try {
@@ -177,10 +158,8 @@ class Scrapper {
 
                 await page.context().browser().close()
             })
-            .catch(e => {
+            .catch(() => {
                 event.emit('login', null)
             })
     }
 }
-
-module.exports = Scrapper
