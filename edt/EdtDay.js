@@ -8,6 +8,8 @@ class EdtDay {
     startDate = new Date()
 
     endDate = new Date()
+
+    color = "#E47522"
 }
 
 module.exports = EdtDay

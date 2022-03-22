@@ -1,8 +1,8 @@
 const Logs = require("../commons/Logs");
 const {webkit, Page, ElementHandle, HtmlElement} = require("playwright");
-const cheerio = require("cheerio");
 const EdtDay = require("./EdtDay");
 const User = require('./User')
+const LiteUser = require("./LiteUser");
 
 class Scrapper {
     /**
@@ -148,30 +148,38 @@ class Scrapper {
 
     /**
      * @param credential {EdtCredential}
+     * @param event {EventEmitter}
      */
-    async scrapAll(credential) {
+    scrapForWeb(credential, event) {
         Logs.info(`Récupération EDT : ${credential.username}`)
 
         // Connexion
-        let data = await this._login(credential) // todo catch error
+        this._login(credential)
+            .then(async data => {
+                let user = data.user
+                let page = data.page
+                let availableWeek = data.availableWeek
+                let profList = data.profList
 
-        let user = data.user
-        let page = data.page
-        let availableWeek = data.availableWeek
-        let profList = data.profList
+                event.emit('login', new LiteUser(user))
 
-        /** @type {EdtDay[]} */
-        let days = []
-        // Pour chaque semaine disponible
-        for(const date of availableWeek) {
-            let edtDays = await this._parseWeek(page, date, profList)
+                /** @type {EdtDay[]} */
+                let days = []
+                // Pour chaque semaine disponible
+                for(const date of availableWeek) {
+                    try {
+                        let edtDays = await this._parseWeek(page, date, profList)
 
-            days = days.concat(edtDays)
-        }
+                        days = days.concat(edtDays)
+                        event.emit('update', days)
+                    } catch (e) {}
+                }
 
-        await page.context().browser().close()
-
-        return days.sort((a, b) => a.startDate - b.startDate)
+                await page.context().browser().close()
+            })
+            .catch(e => {
+                event.emit('login', null)
+            })
     }
 }
 
