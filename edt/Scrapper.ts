@@ -19,7 +19,7 @@ export default class Scrapper {
         this.cacheManager = cacheManager
     }
 
-    async _login(credential: EdtCredential): Promise<{user: User, page: Page, availableWeek: Array<scrapDate>, profList: Array<string>}> {
+    async _login(credential: EdtCredential): Promise<{ user: User, page: Page, availableWeek: Array<scrapDate>, profList: Array<string> }> {
         // Lancement du navigateur
         Logs.info(`Chargement d'un navigateur de scrapping`)
         let browser = await webkit.launch()
@@ -71,7 +71,7 @@ export default class Scrapper {
         }
     }
 
-    async _parseWeek(page: Page, date: {value: number, text: string}, profList: Array<string>): Promise<Array<EdtDay>> {
+    async _parseWeek(page: Page, date: { value: number, text: string }, profList: Array<string>): Promise<Array<EdtDay>> {
         let mondayDate = new Date(date.value * 1000)
 
         Logs.info(`Parsing : ${mondayDate.toLocaleDateString()}`)
@@ -85,13 +85,13 @@ export default class Scrapper {
                 .replaceAll(' ', '')
                 .split(';')
                 .map(c => {
-                    let key_value = c.split(':')
-                    return {
-                        key: key_value[0],
-                        value: key_value[1]
+                        let key_value = c.split(':')
+                        return {
+                            key: key_value[0],
+                            value: key_value[1]
+                        }
                     }
-                }
-            )
+                )
 
             let height = Number.parseInt(css.find(c => c.key === "height").value.replace('px', ''))
             let ml = Number.parseInt(css.find(c => c.key === "margin-left").value.replace('%', ''))
@@ -151,19 +151,24 @@ export default class Scrapper {
 
                 // Vérification cache EDT
                 let daysFromCache = this.cacheManager.getEdtByName(user.defaultEdt)
-                if(daysFromCache) {
+                if (daysFromCache) {
                     event.emit('update', daysFromCache)
                     Logs.info(`Récupération cache EDT : ${credential.username}`)
                 } else {
                     let days: Array<EdtDay> = []
+                    let nowTime = new Date().getTime()
                     // Pour chaque semaine disponible
-                    for(const date of availableWeek) {
+                    for (const date of availableWeek.sort(
+                        (a, b) => Math.abs((a.value * 1000) - nowTime) - Math.abs((b.value * 1000) - nowTime)
+                    )
+                        ) {
                         try {
                             let edtDays = await this._parseWeek(page, date, profList)
 
                             days = days.concat(edtDays)
                             event.emit('update', days)
-                        } catch (e) {}
+                        } catch (e) {
+                        }
                     }
 
                     this.cacheManager.addEdt(user.defaultEdt, days)
