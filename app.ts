@@ -1,4 +1,5 @@
 // Modules
+import express from "express"
 import * as http from 'http'
 import EventEmitter from 'events'
 import {Socket} from "socket.io"
@@ -13,6 +14,8 @@ import EdtDay from './edt/EdtDay'
 import config from "./config.json"
 import EdtCredential from "./edt/EdtCredential";
 import CacheManager from "./edt/cache/CacheManager";
+import {isContext} from "vm";
+import {isCryptoKey} from "util/types";
 
 // Instantiation du questionnaire de cache
 let cacheManager = new CacheManager()
@@ -20,8 +23,14 @@ let cacheManager = new CacheManager()
 // Instantiation du Scrapper
 let scrapper = new Scrapper(cacheManager)
 
-// Démarrage du serveur WEB - Socket IO
-const server = http.createServer()
+// Serveur express
+const app = express()
+app.set('port', config.server.port)
+
+// Serveur Http
+const server = new http.Server(app)
+
+// Serveur Socket.io
 const io = require('socket.io')(server, {
     cors: {
         origin: "*",
@@ -29,6 +38,7 @@ const io = require('socket.io')(server, {
     }
 })
 
+// Route Socket.io
 io.on('connection', (socket: Socket) => {
     Logs.info('Connexion web socket : ' + socket.id)
 
@@ -50,6 +60,22 @@ io.on('connection', (socket: Socket) => {
     })
 })
 
+// Route express
+app.get("/edt", (req, res) => {
+    let token = req.headers["token"]?.toString()
+    if(token) {
+        if(config.token.includes(token)) {
+            let days = cacheManager.getEdtByName(config.autonomousCache.edt)
+            if(days) res.json({
+                edt: config.autonomousCache.edt,
+                days: days
+            })
+            else return res.sendStatus(404)
+        } else res.sendStatus(403)
+    } else res.sendStatus(401)
+})
+
+// Allumage du serveur
 server.listen(config.server.port, () => {
     Logs.info(`Serveur connecté sur le port ${config.server.port}`)
 })
